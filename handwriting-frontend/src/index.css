@@ -1,0 +1,318 @@
+@import url('https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&family=Caveat:wght@400;500;600;700&family=Kalam:wght@300;400;700&family=Homemade+Apple&family=Shadows+Into+Light&family=Indie+Flower&family=Dancing+Script:wght@400;600;700&family=Architects+Daughter&display=swap');
+/* Multi-language *handwriting* fonts (loaded lazily, per script, when used in the editor) */
+@import url('https://fonts.googleapis.com/css2?family=Tillana&family=Baloo+2&family=Yatra+One&family=Modak&family=Atma&family=Galada&family=Baloo+Da+2&family=Hind+Siliguri&family=Mina&family=Aref+Ruqaa:wght@400;700&family=Gulzar&family=Lateef&family=Harmattan&family=Marhey&family=Zhi+Mang+Xing&family=Long+Cang&family=Liu+Jian+Mao+Cao&family=Ma+Shan+Zheng&family=ZCOOL+KuaiLe&family=Klee+One:wght@400;600&family=Yomogi&family=Yuji+Mai&family=Hachi+Maru+Pop&family=Zen+Kurenaido&family=Nanum+Pen+Script&family=Nanum+Brush+Script&family=Gaegu:wght@300;400;700&family=Hi+Melody&family=Gamja+Flower&family=Marck+Script&family=Bad+Script&family=Neucha&family=Pangolin&display=swap');
+/* Genuine Bengali *handwriting* fonts (Google Fonts has none) — Maateen Bangla web-font CDN */
+@import url('https://fonts.maateen.me/bensen-handwriting/font.css');
+@import url('https://fonts.maateen.me/charu-chandan/font.css');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Paper & Ink theme */
+    --background: 38 40% 96%;
+    --foreground: 220 30% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 30% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 30% 12%;
+
+    --primary: 222 47% 18%;
+    --primary-foreground: 38 40% 96%;
+
+    --secondary: 38 30% 90%;
+    --secondary-foreground: 220 30% 12%;
+
+    --muted: 38 25% 92%;
+    --muted-foreground: 220 10% 40%;
+
+    --accent: 28 90% 55%;
+    --accent-foreground: 220 30% 12%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 38 40% 96%;
+
+    --border: 35 20% 85%;
+    --input: 35 20% 85%;
+    --ring: 222 47% 18%;
+
+    --radius: 0.75rem;
+
+    --paper: 38 45% 96%;
+    --paper-line: 210 40% 70%;
+    --ink: 222 60% 14%;
+    --ink-blue: 220 70% 22%;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 30% 12%;
+    --sidebar-primary: 222 47% 18%;
+    --sidebar-primary-foreground: 38 40% 96%;
+    --sidebar-accent: 38 25% 92%;
+    --sidebar-accent-foreground: 220 30% 12%;
+    --sidebar-border: 35 20% 88%;
+    --sidebar-ring: 222 47% 18%;
+
+    --font-display: 'Figtree', sans-serif;
+    --font-body: 'Figtree', sans-serif;
+    --font-hand: 'Caveat', cursive;
+  }
+
+  .dark {
+    --background: 222 40% 8%;
+    --foreground: 38 30% 92%;
+    --card: 222 35% 12%;
+    --card-foreground: 38 30% 92%;
+    --popover: 222 35% 12%;
+    --popover-foreground: 38 30% 92%;
+    --primary: 28 90% 60%;
+    --primary-foreground: 222 40% 8%;
+    --secondary: 222 25% 18%;
+    --secondary-foreground: 38 30% 92%;
+    --muted: 222 25% 16%;
+    --muted-foreground: 38 10% 65%;
+    --accent: 28 90% 60%;
+    --accent-foreground: 222 40% 8%;
+    --border: 222 25% 20%;
+    --input: 222 25% 20%;
+    --ring: 28 90% 60%;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-body);
+  }
+  h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
+}
+
+@layer utilities {
+  .font-hand { font-family: 'Caveat', cursive; }
+  .font-kalam { font-family: 'Kalam', cursive; }
+  .font-apple { font-family: 'Homemade Apple', cursive; }
+  .font-shadows { font-family: 'Shadows Into Light', cursive; }
+  .font-indie { font-family: 'Indie Flower', cursive; }
+  .font-dancing { font-family: 'Dancing Script', cursive; }
+  .font-architect { font-family: 'Architects Daughter', cursive; }
+
+  /* Notebook ruled paper */
+  .paper-ruled {
+    background-color: hsl(var(--paper));
+    background-image:
+      linear-gradient(to bottom, transparent 31px, hsl(var(--paper-line) / 0.35) 32px);
+    background-size: 100% 32px;
+  }
+  .paper-grid {
+    background-color: hsl(var(--paper));
+    background-image:
+      linear-gradient(hsl(var(--paper-line) / 0.18) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--paper-line) / 0.18) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  .paper-dot {
+    background-color: hsl(var(--paper));
+    background-image: radial-gradient(hsl(var(--paper-line) / 0.4) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+
+  /* Signature stroke animation */
+  .signature-path {
+    stroke-dasharray: 1400;
+    stroke-dashoffset: 1400;
+    animation: draw 3.2s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+  }
+  .signature-path.loop {
+    animation: draw 3.2s cubic-bezier(0.65, 0, 0.35, 1) forwards,
+               undraw 1.2s ease-in 4.8s forwards,
+               restart 0s linear 6s forwards;
+    animation-iteration-count: infinite;
+  }
+  @keyframes draw {
+    to { stroke-dashoffset: 0; }
+  }
+  @keyframes undraw {
+    to { stroke-dashoffset: 1400; }
+  }
+
+  /* Handwriting note: left-to-right "writing" reveal + signed flourish */
+  .hw-wipe { width: 0; }
+  .hw-wipe-1.loop { animation: hwWipe1 7s ease-in-out infinite; }
+  .hw-wipe-2.loop { animation: hwWipe2 7s ease-in-out infinite; }
+  .hw-wipe-3.loop { animation: hwWipe3 7s ease-in-out infinite; }
+  .hw-wipe-1:not(.loop) { animation: hwWrite 0.9s ease-in-out 0.1s forwards; }
+  .hw-wipe-2:not(.loop) { animation: hwWrite 1.3s ease-in-out 0.9s forwards; }
+  .hw-wipe-3:not(.loop) { animation: hwWrite 1.1s ease-in-out 2.1s forwards; }
+
+  @keyframes hwWrite { to { width: 760px; } }
+  /* Each line writes within its window, then holds until the cycle fades out */
+  @keyframes hwWipe1 { 0%,3% { width: 0; } 16%,100% { width: 760px; } }
+  @keyframes hwWipe2 { 0%,17% { width: 0; } 38%,100% { width: 760px; } }
+  @keyframes hwWipe3 { 0%,40% { width: 0; } 58%,100% { width: 760px; } }
+
+  /* Flourish underline drawn as one continuous stroke */
+  .hw-flourish { stroke-dasharray: 620; stroke-dashoffset: 620; }
+  .hw-flourish.loop { animation: hwFlourishLoop 7s ease-in-out infinite; }
+  .hw-flourish:not(.loop) { animation: hwDraw 0.8s ease-out 3.1s forwards; }
+  @keyframes hwDraw { to { stroke-dashoffset: 0; } }
+  @keyframes hwFlourishLoop { 0%,58% { stroke-dashoffset: 620; } 72%,100% { stroke-dashoffset: 0; } }
+
+  /* Pen nib rides the signature stroke as it's written */
+  .hw-nib { opacity: 0; }
+  .hw-nib.loop { animation: hwNibLoop 7s ease-in-out infinite; }
+  .hw-nib:not(.loop) { animation: hwNib 1.1s ease-in-out 2.1s forwards; }
+  @keyframes hwNib {
+    0% { transform: translateX(56px); opacity: 0; }
+    12% { opacity: 1; }
+    88% { opacity: 1; }
+    100% { transform: translateX(440px); opacity: 0; }
+  }
+  @keyframes hwNibLoop {
+    0%,40% { transform: translateX(56px); opacity: 0; }
+    44% { opacity: 1; }
+    56% { transform: translateX(440px); opacity: 1; }
+    60%,100% { transform: translateX(440px); opacity: 0; }
+  }
+
+  /* Whole-note fade so the loop restarts cleanly (widths reset while hidden) */
+  .hw-note.loop { animation: hwNote 7s ease-in-out infinite; }
+  @keyframes hwNote {
+    0% { opacity: 0; }
+    3%,90% { opacity: 1; }
+    97%,100% { opacity: 0; }
+  }
+
+  /* Floating prompt pills around the hero showcase */
+  .float-pill { animation: floatPill 5s ease-in-out infinite; }
+  @keyframes floatPill {
+    0%,100% { transform: translateY(0) rotate(var(--pill-rot, 0deg)); }
+    50% { transform: translateY(-9px) rotate(var(--pill-rot, 0deg)); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hw-wipe { width: 760px !important; animation: none !important; }
+    .hw-flourish { stroke-dashoffset: 0 !important; animation: none !important; }
+    .hw-nib { opacity: 0 !important; animation: none !important; }
+    .hw-note { opacity: 1 !important; animation: none !important; }
+    .float-pill { animation: none !important; }
+  }
+
+  /* ---- Handwriting document (Editor) ---- */
+  /* A rendered paper sheet. Markdown is parsed to HTML and styled as handwriting. */
+  .hw-sheet {
+    background-color: #fff;
+    color: #000;
+    box-sizing: border-box;
+  }
+  /* Markdown element rhythm inside the sheet — kept tight so it reads like a written page */
+  .hw-body h1, .hw-body h2, .hw-body h3 { font-weight: 700; margin: 0.4em 0 0.25em; line-height: 1.2; }
+  .hw-body h1 { font-size: 1.6em; }
+  .hw-body h2 { font-size: 1.35em; }
+  .hw-body h3 { font-size: 1.15em; }
+  .hw-body p { margin: 0 0 0.55em; }
+  .hw-body ul, .hw-body ol { margin: 0 0 0.55em; padding-left: 1.4em; }
+  .hw-body li { margin: 0.1em 0; }
+  .hw-body blockquote { margin: 0 0 0.55em; padding-left: 0.8em; border-left: 3px solid currentColor; opacity: 0.85; }
+  .hw-body a { color: inherit; text-decoration: underline; }
+  .hw-body strong { font-weight: 700; }
+  .hw-body em { font-style: italic; }
+  .hw-body hr { border: none; border-top: 1.5px solid currentColor; opacity: 0.4; margin: 0.8em 0; }
+  .hw-body code { font-family: inherit; }
+  .hw-body img { max-width: 100%; }
+
+  /* Realism: every word/glyph gets a stable rotation, baseline shift, skew and
+     a little size variation so the page reads as written by hand — NEVER bold.
+     All effects are transform/opacity based, so they survive PDF/PNG export. */
+  .hw-word {
+    display: inline-block;
+    transform:
+      translateY(var(--y, 0px))
+      rotate(var(--r, 0deg))
+      skewX(var(--sk, 0deg))
+      scale(var(--sc, 1));
+    transform-origin: center bottom;
+    opacity: var(--o, 1);            /* ink flow: some words a touch lighter */
+    letter-spacing: var(--ls, 0);    /* natural spacing wobble */
+  }
+  /* Ink speck trailing a word, like a nib lifting off the paper. */
+  .hw-speck { position: relative; }
+  .hw-speck::after {
+    content: "";
+    position: absolute;
+    right: -0.14em;
+    bottom: 0.2em;
+    width: 0.1em;
+    height: 0.1em;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.6;
+  }
+  /* A second, fainter dot above — like splatter from a fast stroke. */
+  .hw-drip { position: relative; }
+  .hw-drip::before {
+    content: "";
+    position: absolute;
+    left: -0.1em;
+    top: 0.05em;
+    width: 0.06em;
+    height: 0.06em;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.4;
+  }
+
+  /* Ruled / grid overlays drawn in the ink-independent paper-line color so they print */
+  .hw-lined {
+    background-image: linear-gradient(to bottom, transparent calc(var(--rule, 32px) - 1px), rgba(80,120,170,0.28) var(--rule, 32px));
+    background-size: 100% var(--rule, 32px);
+  }
+  .hw-gridded {
+    background-image:
+      linear-gradient(rgba(80,120,170,0.18) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(80,120,170,0.18) 1px, transparent 1px);
+    background-size: var(--rule, 28px) var(--rule, 28px);
+  }
+  .hw-dotted {
+    background-image: radial-gradient(rgba(80,120,170,0.35) 1px, transparent 1px);
+    background-size: var(--rule, 24px) var(--rule, 24px);
+  }
+
+  .ink-text {
+    color: hsl(var(--ink-blue));
+  }
+
+  .grain {
+    position: relative;
+  }
+  .grain::after {
+    content: '';
+    position: absolute; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+    opacity: 0.06;
+    pointer-events: none;
+    mix-blend-mode: multiply;
+  }
+}
+
+/* Print: show only the document sheet, paginate it natively as crisp vector text */
+@media print {
+  body * { visibility: hidden; }
+  #print-area, #print-area * { visibility: visible; }
+  #print-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    margin: 0;
+    width: 100% !important;
+    min-height: 0 !important;
+    transform: none !important; /* drop the on-screen fit-to-column scale */
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+  }
+  @page { margin: 12mm; }
+}

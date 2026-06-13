@@ -1,0 +1,2 @@
+DROP POLICY "Members can view workspaces" ON public.workspaces;
+CREATE POLICY "Members and owners can view workspaces" ON public.workspaces FOR SELECT TO authenticated USING (owner_id = auth.uid() OR is_workspace_member(auth.uid(), id));
