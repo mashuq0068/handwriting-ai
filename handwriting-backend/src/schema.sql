@@ -72,3 +72,28 @@ CREATE TRIGGER trg_documents_updated_at
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 CREATE INDEX IF NOT EXISTS documents_user_idx ON documents (user_id, updated_at DESC);
+
+-- ---------------------------------------------------------------------------
+-- fonts  (a generated personal handwriting font: the reusable .ttf asset)
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS fonts (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name        TEXT NOT NULL DEFAULT 'My handwriting',
+  family      TEXT NOT NULL,                       -- unique CSS family, e.g. QuillifyHand-<shortid>
+  language    TEXT NOT NULL DEFAULT 'latin',
+  format      TEXT NOT NULL DEFAULT 'ttf',
+  glyph_count INTEGER NOT NULL DEFAULT 0,
+  source      TEXT NOT NULL DEFAULT 'template',    -- 'template' | 'photo'
+  data        BYTEA NOT NULL,                       -- the .ttf bytes
+  metrics     JSONB NOT NULL DEFAULT '{}'::jsonb,   -- unitsPerEm, ascender, coverage, missing glyphs
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+DROP TRIGGER IF EXISTS trg_fonts_updated_at ON fonts;
+CREATE TRIGGER trg_fonts_updated_at
+  BEFORE UPDATE ON fonts
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+CREATE INDEX IF NOT EXISTS fonts_user_idx ON fonts (user_id, updated_at DESC);

@@ -45,6 +45,28 @@ export interface ListDocumentsParams {
   q?: string;
 }
 
+export interface FontRecord {
+  id: string;
+  name: string;
+  family: string;
+  language: string;
+  format: string;
+  glyphCount: number;
+  source: "template" | "photo";
+  metrics: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LabeledGlyph {
+  char: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  form?: "isol" | "init" | "medi" | "fina";
+}
+
 // ---------------------------------------------------------------- token store
 export const tokenStore = {
   get access() {
@@ -146,6 +168,19 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   return (await res.json()) as T;
 }
 
+// Authenticated binary GET (with one transparent refresh-retry). Used for font files.
+async function requestBinary(path: string, retry = true): Promise<ArrayBuffer> {
+  const headers: Record<string, string> = {};
+  if (tokenStore.access) headers.Authorization = `Bearer ${tokenStore.access}`;
+  const res = await fetch(`${API_URL}${path}`, { headers, credentials: "include" });
+  if (res.status === 401 && retry) {
+    const refreshed = await doRefresh();
+    if (refreshed) return requestBinary(path, false);
+  }
+  if (!res.ok) throw new ApiError(res.status, res.statusText);
+  return res.arrayBuffer();
+}
+
 // -------------------------------------------------------------------- auth api
 export const authApi = {
   async register(name: string, email: string, password: string) {
@@ -219,6 +254,52 @@ export const documentsApi = {
 
   async remove(id: string) {
     await request(`/documents/${id}`, { method: "DELETE" });
+  },
+};
+
+// ------------------------------------------------------------------- fonts api
+export const fontsApi = {
+  async list() {
+    const data = await request<{ fonts: FontRecord[] }>("/fonts");
+    return data.fonts;
+  },
+
+  // Persist a generated font. `dataBase64` is the raw .ttf bytes, base64-encoded.
+  async create(input: {
+    name: string;
+    family: string;
+    language?: string;
+    glyphCount?: number;
+    source?: "template" | "manual" | "draw" | "photo";
+    metrics?: Record<string, unknown>;
+    dataBase64: string;
+  }) {
+    const data = await request<{ font: FontRecord }>("/fonts", { method: "POST", body: input });
+    return data.font;
+  },
+
+  async remove(id: string) {
+    await request(`/fonts/${id}`, { method: "DELETE" });
+  },
+
+  // Fetch the .ttf bytes (authenticated) for FontFace registration.
+  async fetchFontBuffer(id: string) {
+    return requestBinary(`/fonts/${id}/file`);
+  },
+
+  // Whether the server has the AI extractor configured (API key present).
+  async aiStatus() {
+    const data = await request<{ enabled: boolean }>("/fonts/ai-status");
+    return data.enabled;
+  },
+
+  // Single-photo (AI) mode: one-time vision call returning labeled glyph boxes.
+  async label(input: { image: string; language?: string; details?: string }) {
+    const data = await request<{ glyphs: LabeledGlyph[] }>("/fonts/label", {
+      method: "POST",
+      body: input,
+    });
+    return data.glyphs;
   },
 };
 

@@ -2,7 +2,7 @@ import Navbar from "@/components/site/Navbar";
 import Footer from "@/components/site/Footer";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { FileText, Wand2, PenLine, Download, ArrowRight, Upload, Bot, Settings } from "lucide-react";
+import { FileText, Wand2, PenLine, Download, ArrowRight, Upload, Sparkles, Settings } from "lucide-react";
 
 const STEPS = [
   { icon: FileText, title: "1. Bring your content", body: "Paste plain text, drop a PDF, upload a DOCX, or ask the AI assistant to write it for you. Quillify reads structure, paragraphs, and lists." },
@@ -40,8 +40,8 @@ export default function HowItWorks() {
 
         <div className="mx-auto max-w-4xl px-5 mt-20 grid md:grid-cols-3 gap-5">
           {[
-            { icon: Upload, title: "Train your hand", body: "Snap 3–5 photos of your handwriting. We do the rest.", to: "/train" },
-            { icon: Bot, title: "Generate with AI", body: "Letters, notes, applications — written in seconds.", to: "/assistant" },
+            { icon: PenLine, title: "Train (Manual)", body: "Write each letter once — or print a template, fill it, photograph it.", to: "/handwriting/manual" },
+            { icon: Sparkles, title: "Train (AI)", body: "Upload any handwriting photo and let AI extract your letters.", to: "/handwriting/ai" },
             { icon: Wand2, title: "Open the editor", body: "Live preview, real-time tweaks, instant export.", to: "/editor" },
           ].map((c) => (
             <Link key={c.title} to={c.to} className="rounded-2xl border border-border bg-card p-6 hover:shadow-md transition group">

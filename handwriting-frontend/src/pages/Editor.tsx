@@ -25,12 +25,13 @@ import {
   Italic,
   Heading,
   List,
-  Wand2,
   SlidersHorizontal,
   Save,
 } from "lucide-react";
 import { toast } from "sonner";
 import { applyHandwritingJitter, hashString } from "@/lib/handwriting";
+import { fontsApi, type FontRecord } from "@/lib/api";
+import { registerFont } from "@/lib/fontBuilder";
 
 /* ------------------------------------------------------------------ config */
 
@@ -321,6 +322,33 @@ export default function Editor() {
   const [realism, setRealism] = useState(true);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [userFonts, setUserFonts] = useState<FontRecord[]>([]);
+
+  // Load the user's personal handwriting fonts and register them with the browser
+  // so they render in the preview and exports just like the built-in fonts.
+  useEffect(() => {
+    let cancelled = false;
+    fontsApi
+      .list()
+      .then(async (fonts) => {
+        if (cancelled) return;
+        setUserFonts(fonts);
+        for (const f of fonts) {
+          try {
+            const buf = await fontsApi.fetchFontBuffer(f.id);
+            await registerFont(f.family, buf);
+          } catch {
+            /* ignore a single font that fails to load */
+          }
+        }
+      })
+      .catch(() => {
+        /* not signed in / no fonts — ignore */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const size = PAGE_SIZES[pageSizeId];
   const paperCls = PAPERS.find((p) => p.id === paper)!.cls;
@@ -383,8 +411,11 @@ export default function Editor() {
         const code = doc.language || "latin";
         setLangCode(code);
         const langDef = LANGUAGES.find((l) => l.code === code) ?? LANGUAGES[0];
-        const matchedFont =
-          langDef.fonts.find((f) => f.name === doc.fontName) ?? langDef.fonts[0];
+        // Prefer the exact saved family (covers personal "My Hands" fonts); else match by name.
+        const savedFamily = typeof s.fontFamily === "string" ? s.fontFamily : null;
+        const matchedFont = savedFamily
+          ? { name: doc.fontName || "Saved", family: savedFamily }
+          : langDef.fonts.find((f) => f.name === doc.fontName) ?? langDef.fonts[0];
         setFont(matchedFont);
         if (typeof s.pageColor === "string") setPageColor(s.pageColor);
         if (typeof s.ink === "string") setInk(s.ink);
@@ -426,6 +457,7 @@ export default function Editor() {
           slant: slant[0],
           spacing: spacing[0],
           realism,
+          fontFamily: font.family, // remember the exact family (incl. personal fonts)
         },
       };
       if (docId) {
@@ -592,11 +624,6 @@ export default function Editor() {
               <Button variant="ghost" size="icon" className="h-7 w-7" title="List item" onClick={() => prefixLine("- ")}>
                 <List className="h-3.5 w-3.5" />
               </Button>
-              <Link to="/assistant" title="Write with AI">
-                <Button variant="ghost" size="icon" className="h-7 w-7">
-                  <Wand2 className="h-3.5 w-3.5" />
-                </Button>
-              </Link>
             </div>
           </div>
           <Textarea
@@ -649,6 +676,33 @@ export default function Editor() {
 
         {/* ----------------------------------------------------- controls */}
         <aside className="border-l border-border bg-card p-5 space-y-6 overflow-y-auto no-print">
+          {/* My Hands — the user's personal handwriting fonts */}
+          {userFonts.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">My Hands</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {userFonts.map((f) => {
+                  const family = `'${f.family}', cursive`;
+                  return (
+                    <button
+                      key={f.id}
+                      onClick={() => setFont({ name: f.name, family })}
+                      className={`p-2.5 rounded-lg border text-left transition ${
+                        font.family === family ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+                      }`}
+                    >
+                      <span className="block text-xl leading-none text-foreground" style={{ fontFamily: family }}>
+                        Abcde
+                      </span>
+                      <span className="text-[10px] text-muted-foreground mt-1 block truncate">{f.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <Link to="/handwriting/manual" className="text-xs text-primary hover:underline">+ Add a handwriting</Link>
+            </div>
+          )}
+
           {/* Language + font generation */}
           <div className="space-y-2">
             <Label className="text-sm font-semibold">Language</Label>

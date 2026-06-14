@@ -9,7 +9,6 @@ import {
   Sparkles,
   Download,
   PenLine,
-  Bot,
   Wand2,
   ScrollText,
   GraduationCap,
@@ -202,7 +201,7 @@ export default function Landing() {
                 </li>
               ))}
             </ul>
-            <Link to="/train">
+            <Link to="/handwriting/manual">
               <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
                 Train my handwriting <Upload className="ml-1.5 h-4 w-4" />
               </Button>
@@ -222,52 +221,6 @@ export default function Landing() {
                 </p>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* AI ASSISTANT */}
-      <section className="py-24">
-        <div className="mx-auto max-w-6xl px-5 grid md:grid-cols-2 gap-12 items-center">
-          <div className="rounded-2xl bg-card border border-border shadow-xl overflow-hidden order-2 md:order-1">
-            <div className="bg-secondary/60 px-4 py-3 border-b border-border flex items-center gap-2">
-              <Bot className="h-4 w-4 text-accent" />
-              <span className="text-sm font-semibold">Quillify Assistant</span>
-            </div>
-            <div className="p-5 space-y-3 text-sm">
-              <div className="flex justify-end">
-                <p className="bg-primary text-primary-foreground rounded-2xl rounded-tr-sm px-4 py-2 max-w-[80%]">
-                  Write a 3-day school leave letter for my son, Arjun, grade 7.
-                </p>
-              </div>
-              <div className="flex justify-start">
-                <div className="bg-secondary rounded-2xl rounded-tl-sm px-4 py-3 max-w-[88%]">
-                  <p className="text-xs text-muted-foreground mb-1">Generated · in "Casual" hand</p>
-                  <p className="font-hand ink-text text-xl leading-snug">
-                    Dear Class Teacher, I'm writing to request a 3-day leave for Arjun (Grade 7) from Mar 4–6 due to a family wedding…
-                  </p>
-                  <div className="flex gap-2 mt-3">
-                    <Button size="sm" variant="outline" className="h-7 text-xs">Edit</Button>
-                    <Button size="sm" className="h-7 text-xs">Open in editor</Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="space-y-6 order-1 md:order-2">
-            <span className="text-xs font-semibold uppercase tracking-widest text-accent">AI Assistant</span>
-            <h2 className="font-display text-3xl md:text-5xl font-bold">Just say what you need.</h2>
-            <p className="text-muted-foreground text-lg leading-relaxed">
-              Ask for a leave letter, a thank-you note, an excuse, a cover letter. The AI writes it; Quillify hands it over to the writer.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {["Write a leave application", "Job cover letter", "Birthday card for mom", "Excuse for being late", "Formal apology"].map((p) => (
-                <span key={p} className="px-3 py-1.5 rounded-full bg-secondary text-sm">{p}</span>
-              ))}
-            </div>
-            <Link to="/assistant">
-              <Button size="lg"><Wand2 className="mr-1.5 h-4 w-4" /> Try the assistant</Button>
-            </Link>
           </div>
         </div>
       </section>

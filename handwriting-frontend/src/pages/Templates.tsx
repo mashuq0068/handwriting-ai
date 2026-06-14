@@ -49,7 +49,7 @@ export default function Templates() {
           <div className="mt-14 rounded-2xl bg-primary text-primary-foreground p-10 text-center">
             <h2 className="font-display text-2xl md:text-3xl font-bold">Don't see your handwriting?</h2>
             <p className="text-primary-foreground/80 mt-2">Upload a few samples and train Quillify on your own hand in under five minutes.</p>
-            <Link to="/train"><Button size="lg" className="mt-6 bg-accent text-accent-foreground hover:bg-accent/90">Train your handwriting</Button></Link>
+            <Link to="/handwriting/manual"><Button size="lg" className="mt-6 bg-accent text-accent-foreground hover:bg-accent/90">Train your handwriting</Button></Link>
           </div>
         </div>
       </section>

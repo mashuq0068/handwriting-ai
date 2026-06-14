@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,8 +12,8 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Documents from "./pages/Documents";
 import Editor from "./pages/Editor";
-import TrainHandwriting from "./pages/TrainHandwriting";
-import AIAssistant from "./pages/AIAssistant";
+import HandwritingManual from "./pages/HandwritingManual";
+import HandwritingAI from "./pages/HandwritingAI";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
@@ -58,8 +58,11 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            <Route path="/train" element={<TrainHandwriting />} />
-            <Route path="/assistant" element={<AIAssistant />} />
+            <Route path="/handwriting/manual" element={<HandwritingManual />} />
+            <Route path="/handwriting/ai" element={<HandwritingAI />} />
+            {/* back-compat */}
+            <Route path="/train" element={<Navigate to="/handwriting/manual" replace />} />
+            <Route path="/assistant" element={<Navigate to="/handwriting/ai" replace />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

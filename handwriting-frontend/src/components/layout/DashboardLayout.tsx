@@ -1,6 +1,6 @@
 import { type ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { PenLine, Bot, LogOut, LayoutDashboard, FolderOpen } from "lucide-react";
+import { PenLine, Sparkles, LogOut, LayoutDashboard, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { documentsApi } from "@/lib/api";
@@ -9,8 +9,8 @@ import { useAuth } from "@/contexts/AuthContext";
 const NAV = [
   { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
   { icon: FolderOpen, label: "My documents", to: "/documents" },
-  { icon: PenLine, label: "Handwriting", to: "/train" },
-  { icon: Bot, label: "AI Assistant", to: "/assistant" },
+  { icon: Sparkles, label: "Handwriting (AI)", to: "/handwriting/ai", beta: true },
+  { icon: PenLine, label: "Handwriting (Manual)", to: "/handwriting/manual", beta: true },
 ];
 
 /**
@@ -54,7 +54,9 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
                   active ? "bg-secondary font-semibold" : "text-muted-foreground hover:bg-secondary/60"
                 }`}
               >
-                <i.icon className="h-4 w-4" /> {i.label}
+                <i.icon className="h-4 w-4" />
+                <span className="flex-1 truncate">{i.label}</span>
+                {i.beta && <span className="text-[9px] px-1.5 py-0.5 rounded bg-accent/20 text-accent font-semibold">beta</span>}
               </Link>
             );
           })}

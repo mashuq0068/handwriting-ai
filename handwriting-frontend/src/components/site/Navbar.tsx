@@ -6,7 +6,7 @@ import { useState } from "react";
 const LINKS = [
   { to: "/how-it-works", label: "How it works" },
   { to: "/templates", label: "Templates" },
-  { to: "/assistant", label: "AI Assistant" },
+  { to: "/handwriting/manual", label: "Handwriting" },
   { to: "/pricing", label: "Pricing" },
 ];
 

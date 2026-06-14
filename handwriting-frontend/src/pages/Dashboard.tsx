@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { FileText, Upload, Bot, Plus, Trash2, Sparkles, PenLine } from "lucide-react";
+import { FileText, Upload, Plus, Trash2, Sparkles, PenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -69,8 +69,8 @@ export default function Dashboard() {
           {[
             { icon: FileText, title: "Paste text", body: "Convert typed text", to: "/editor" },
             { icon: Upload, title: "Upload PDF", body: "Drop a file to convert", to: "/editor" },
-            { icon: Bot, title: "Ask AI", body: "Write a letter for me", to: "/assistant" },
-            { icon: Sparkles, title: "Train hand", body: "Add your handwriting", to: "/train" },
+            { icon: PenLine, title: "Train hand (Manual)", body: "Write your letters", to: "/handwriting/manual" },
+            { icon: Sparkles, title: "Train hand (AI)", body: "From a photo", to: "/handwriting/ai" },
           ].map((q) => (
             <Link key={q.title} to={q.to} className="group rounded-2xl border border-border bg-card p-5 hover:shadow-md hover:-translate-y-0.5 transition">
               <span className="h-10 w-10 rounded-lg bg-accent/15 text-accent grid place-items-center mb-3"><q.icon className="h-5 w-5" /></span>
@@ -122,7 +122,7 @@ export default function Dashboard() {
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display text-xl font-bold">Your handwriting</h2>
-            <Link to="/train"><Button variant="outline" size="sm"><Plus className="h-4 w-4 mr-1" /> Add new</Button></Link>
+            <Link to="/handwriting/manual"><Button variant="outline" size="sm"><Plus className="h-4 w-4 mr-1" /> Add new</Button></Link>
           </div>
           <div className="grid sm:grid-cols-3 gap-4">
             {HANDS.map((h) => (
