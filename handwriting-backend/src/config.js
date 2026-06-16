@@ -32,21 +32,18 @@ export const config = {
     refreshTtlDays: Number(process.env.REFRESH_TOKEN_TTL_DAYS) || 30,
   },
 
-  // Optional: vision APIs for single-photo handwriting labeling.
-  // Anthropic is primary; Gemini (free tier) is the fallback on any Anthropic error.
+  // Two AI providers only:
+  //  • Claude (Anthropic) — VISION: reads an uploaded sample and locates letters.
+  //    Cannot generate images.
+  //  • GPT (OpenAI) — VISION (gpt-4o) + IMAGE GENERATION (gpt-image-1): can draw a
+  //    clean cloned alphabet specimen from the sample.
   anthropic: {
     apiKey: process.env.ANTHROPIC_API_KEY || null,
     model: process.env.ANTHROPIC_MODEL || "claude-opus-4-8",
   },
-  gemini: {
-    apiKey: process.env.GEMINI_API_KEY || null,
-    model: process.env.GEMINI_MODEL || "gemini-2.0-flash",
-  },
-  // Generic OpenAI-compatible vision provider — plug in Groq / OpenRouter /
-  // GitHub Models / Together / etc. by setting base URL + key + model.
-  openaiCompat: {
-    baseUrl: process.env.OPENAI_COMPAT_BASE_URL || null,
-    apiKey: process.env.OPENAI_COMPAT_API_KEY || null,
-    model: process.env.OPENAI_COMPAT_MODEL || null,
+  openai: {
+    apiKey: process.env.OPENAI_API_KEY || null,
+    visionModel: process.env.OPENAI_VISION_MODEL || "gpt-4o",
+    imageModel: process.env.OPENAI_IMAGE_MODEL || "gpt-image-1",
   },
 };

@@ -19,7 +19,7 @@ export interface ScriptCell {
 }
 
 export interface LigatureDef {
-  from: [string, string];
+  from: string[]; // the character sequence that joins (2 or 3 letters)
   display: string;
 }
 
@@ -57,15 +57,46 @@ function latinLike(code: string, label: string, letters: string, sample: string)
     ligatures:
       code === "latin"
         ? [
+            // Most-frequent English letter pairs + a few key clusters. Written
+            // JOINED on the sheet, they render as connected (cursive) runs.
             { from: ["t", "h"], display: "th" },
             { from: ["h", "e"], display: "he" },
             { from: ["i", "n"], display: "in" },
             { from: ["e", "r"], display: "er" },
             { from: ["a", "n"], display: "an" },
+            { from: ["r", "e"], display: "re" },
+            { from: ["o", "n"], display: "on" },
+            { from: ["e", "n"], display: "en" },
+            { from: ["e", "d"], display: "ed" },
             { from: ["o", "u"], display: "ou" },
+            { from: ["n", "g"], display: "ng" },
+            { from: ["s", "t"], display: "st" },
+            { from: ["t", "i"], display: "ti" },
+            { from: ["l", "l"], display: "ll" },
+            { from: ["t", "h", "e"], display: "the" },
+            { from: ["a", "n", "d"], display: "and" },
+            { from: ["i", "n", "g"], display: "ing" },
+            { from: ["i", "o", "n"], display: "ion" },
           ]
         : undefined,
   };
+}
+
+// Connected-pair cells (ligatures) presented as capturable cells — used by the
+// template sheet, the draw grid and the extractor so joins can be written once
+// and reused. Empty for scripts without a ligature list.
+export function ligatureCells(script: ScriptConfig): ScriptCell[] {
+  return (script.ligatures ?? []).map((l) => ({
+    id: `lig:${l.from.join("")}`,
+    chars: l.from.join(""),
+    display: l.display,
+    kind: "ligature" as const,
+  }));
+}
+
+// All cells we can capture on a sheet: base glyphs + connected pairs.
+export function capturableCells(script: ScriptConfig): ScriptCell[] {
+  return [...script.cells, ...ligatureCells(script)];
 }
 
 // ---- Arabic (with joining forms) ------------------------------------------

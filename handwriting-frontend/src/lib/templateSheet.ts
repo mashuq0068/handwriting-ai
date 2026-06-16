@@ -4,6 +4,7 @@
  * with the extractor so a photo of the filled sheet maps back exactly.
  */
 import type { ScriptConfig } from "./scripts";
+import { capturableCells } from "./scripts";
 
 // A4 @ ~150dpi.
 export const SHEET = { w: 1240, h: 1754 };
@@ -35,13 +36,14 @@ export function sheetLayout(script: ScriptConfig): SheetLayout {
   const gw = SHEET.w - 2 * MARGIN;
   const gh = SHEET.h - MARGIN - gy;
 
-  const n = script.cells.length;
+  const source = capturableCells(script);
+  const n = source.length;
   const cols = 7;
   const rows = Math.ceil(n / cols);
   const cw = gw / cols;
   const ch = Math.min(gh / rows, 210);
 
-  const cells: CellRect[] = script.cells.map((c, i) => {
+  const cells: CellRect[] = source.map((c, i) => {
     const col = i % cols;
     const row = Math.floor(i / cols);
     return { id: c.id, display: c.display, form: c.form, x: gx + col * cw, y: gy + row * ch, w: cw, h: ch };
@@ -70,7 +72,10 @@ export function drawTemplate(script: ScriptConfig, name: string): HTMLCanvasElem
   ctx.fillText(`Quillify handwriting — ${name}`, MARGIN, MARGIN + 60);
   ctx.font = "24px sans-serif";
   ctx.fillStyle = "#666666";
-  ctx.fillText(`${script.label} · write each character on the line, fill the box`, MARGIN, MARGIN + 100);
+  const tip = script.ligatures?.length
+    ? `${script.label} · write each letter on the line; write the 2–3 letter cells JOINED (cursive) for connection`
+    : `${script.label} · write each character on the line, fill the box`;
+  ctx.fillText(tip, MARGIN, MARGIN + 100);
 
   for (const cell of layout.cells) {
     // cell border
@@ -116,4 +121,15 @@ export async function downloadTemplatePdf(script: ScriptConfig, name: string): P
   const pageH = pdf.internal.pageSize.getHeight();
   pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, pageW, pageH);
   pdf.save(`quillify-template-${script.code}.pdf`);
+}
+
+// Download the template as a PNG image (for tablets / on-screen tracing).
+export function downloadTemplatePng(script: ScriptConfig, name: string): void {
+  const canvas = drawTemplate(script, name);
+  const a = document.createElement("a");
+  a.href = canvas.toDataURL("image/png");
+  a.download = `quillify-template-${script.code}.png`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 }

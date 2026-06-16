@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { SCRIPT_LIST, getScript } from "@/lib/scripts";
 import { buildFont, type BuiltFont, type GlyphInput } from "@/lib/fontBuilder";
 import { registerFont } from "@/lib/fontBuilder";
-import { downloadTemplatePdf } from "@/lib/templateSheet";
+import { downloadTemplatePdf, downloadTemplatePng } from "@/lib/templateSheet";
 import { extractFromPhoto } from "@/lib/extractSheet";
 import { DrawGrid, type DrawGridHandle } from "@/components/handwriting/DrawGrid";
 import { FontResult } from "@/components/handwriting/FontResult";
@@ -31,11 +31,13 @@ export default function HandwritingManual() {
   const [photo, setPhoto] = useState<HTMLImageElement | null>(null);
   const [extracted, setExtracted] = useState<GlyphInput[]>([]);
   const [extracting, setExtracting] = useState(false);
+  const [warpedUrl, setWarpedUrl] = useState<string | null>(null);
 
   const changeScript = (code: string) => {
     setScriptCode(code);
     setBuilt(null);
     setExtracted([]);
+    setWarpedUrl(null);
     setCoverage(0);
   };
 
@@ -44,6 +46,7 @@ export default function HandwritingManual() {
     img.onload = () => {
       setPhoto(img);
       setExtracted([]);
+      setWarpedUrl(null);
       setBuilt(null);
     };
     img.src = URL.createObjectURL(file);
@@ -53,11 +56,21 @@ export default function HandwritingManual() {
     if (!photo) return;
     setExtracting(true);
     try {
-      const { glyphs } = extractFromPhoto(photo, script);
+      const { glyphs, warped } = extractFromPhoto(photo, script);
       setExtracted(glyphs);
+      setWarpedUrl(warped.toDataURL());
       setCoverage(glyphs.length);
-      if (!glyphs.length) toast.warning("Couldn't read any cells. Make sure the 4 corner squares are visible and the photo is flat & bright.");
-      else toast.success(`Read ${glyphs.length} characters from the sheet.`);
+      const total = script.cells.filter((c) => !c.form || c.form === "isol").length;
+      if (!glyphs.length) {
+        toast.warning("Couldn't read any cells. Make sure the 4 corner squares are visible and the photo is flat & bright.");
+      } else if (glyphs.length < Math.min(10, total * 0.25)) {
+        toast.warning(
+          `Only ${glyphs.length} cells had ink. Did you upload a photo of the sheet AFTER writing on it with a pen? The faint printed letters are just guides — write your own letters over them, then photograph that.`,
+          { duration: 8000 }
+        );
+      } else {
+        toast.success(`Read ${glyphs.length} characters from the sheet.`);
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Extraction failed");
     } finally {
@@ -142,11 +155,15 @@ export default function HandwritingManual() {
               <ol className="text-sm text-muted-foreground space-y-1.5 list-decimal list-inside">
                 <li>Download &amp; print the template for <strong>{script.label}</strong>.</li>
                 <li>Write each character on its guide line with a dark pen. Keep the 4 black corner squares visible.</li>
+                <li>For the <strong>2–3 letter cells</strong> at the end (th, he, the, ing…), write them <strong>joined</strong> like cursive — that's what makes your letters connect.</li>
                 <li>Take a flat, bright photo (or scan) and upload it. The system reads each cell automatically.</li>
               </ol>
               <div className="flex flex-wrap items-center gap-3">
                 <Button variant="outline" onClick={() => downloadTemplatePdf(script, name)}>
                   <FileDown className="h-4 w-4 mr-1.5" /> Download template (PDF)
+                </Button>
+                <Button variant="outline" onClick={() => downloadTemplatePng(script, name)}>
+                  <FileDown className="h-4 w-4 mr-1.5" /> Download template (PNG)
                 </Button>
                 <label className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm cursor-pointer hover:bg-secondary/50">
                   <Upload className="h-4 w-4" /> Upload filled photo
@@ -156,17 +173,34 @@ export default function HandwritingManual() {
                   <Camera className="h-4 w-4 mr-1.5" /> {extracting ? "Reading…" : "Read sheet"}
                 </Button>
               </div>
+              {warpedUrl && (
+                <div>
+                  <p className="text-sm font-semibold mb-2">Flattened sheet (what the reader sees after aligning to the corners):</p>
+                  <img src={warpedUrl} alt="flattened sheet" className="rounded-lg border border-border max-h-96 object-contain bg-white mx-auto" />
+                  <p className="text-xs text-muted-foreground mt-1.5">This should look like a clean, straight grid with your letters sitting inside the boxes. If it's skewed, stretched, or the letters sit between/outside the boxes, the corner squares weren't found correctly.</p>
+                </div>
+              )}
               {photo && (
                 <div className="grid sm:grid-cols-2 gap-4">
                   <img src={photo.src} alt="sheet" className="rounded-lg border border-border max-h-72 object-contain bg-white" />
                   {extracted.length > 0 && (
                     <div>
-                      <p className="text-sm font-semibold mb-2">Read {extracted.length} characters</p>
-                      <div className="flex flex-wrap gap-1.5 max-h-64 overflow-auto">
+                      <p className="text-sm font-semibold mb-2">Read {extracted.length} characters — this is the actual ink we extracted:</p>
+                      <div className="flex flex-wrap gap-2 max-h-72 overflow-auto">
                         {extracted.map((g) => (
-                          <span key={g.cell.id} className="h-7 min-w-7 px-1 grid place-items-center rounded bg-secondary text-sm">{g.cell.display}</span>
+                          <div key={g.cell.id} className="flex flex-col items-center">
+                            <img
+                              src={g.canvas.toDataURL()}
+                              alt={g.cell.display}
+                              className="h-12 w-9 object-contain rounded border border-border bg-white"
+                            />
+                            <span className="text-[10px] text-muted-foreground mt-0.5">{g.cell.display}</span>
+                          </div>
                         ))}
                       </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Each tile should show YOUR letter (the one printed under it). If tiles are blank or show the wrong letter, the photo wasn't read correctly — retake it flatter/brighter with all 4 corner squares visible.
+                      </p>
                     </div>
                   )}
                 </div>

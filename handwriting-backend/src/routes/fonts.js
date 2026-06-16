@@ -3,18 +3,36 @@ import { query } from "../db.js";
 import { config } from "../config.js";
 import { asyncHandler, requireAuth } from "../middleware.js";
 import { labelHandwriting } from "../vision.js";
+import { generateSpecimen, imagegenEnabled } from "../imagegen.js";
 
 export const fontsRouter = Router();
 
-// GET /fonts/ai-status — whether the single-photo AI extractor is configured.
+// GET /fonts/ai-status — which providers are configured.
+//   claude: vision available · gpt: vision + image-gen available
 fontsRouter.get("/ai-status", requireAuth, (_req, res) => {
-  const enabled = Boolean(
-    config.anthropic.apiKey ||
-      config.gemini.apiKey ||
-      (config.openaiCompat.apiKey && config.openaiCompat.baseUrl && config.openaiCompat.model)
-  );
-  res.json({ enabled });
+  const claude = Boolean(config.anthropic.apiKey);
+  const gpt = Boolean(config.openai.apiKey);
+  res.json({ claude, gpt, imagegen: imagegenEnabled(), enabled: claude || gpt });
 });
+
+// POST /fonts/specimen — GPT generates a clean cloned alphabet sheet (gpt-image-1).
+// Body: { image: dataUrl, language?, chars? } → { image: dataUrl }
+fontsRouter.post(
+  "/specimen",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const { image, language = "latin", chars = "" } = req.body || {};
+    if (!image || typeof image !== "string") {
+      return res.status(400).json({ error: "An image (base64 data URL) is required" });
+    }
+    try {
+      const out = await generateSpecimen(image, { language: String(language), chars: String(chars) });
+      res.json({ image: out });
+    } catch (err) {
+      res.status(err.status || 502).json({ error: err.message || "Specimen generation failed" });
+    }
+  })
+);
 
 // Metadata shape (never includes the binary `data`).
 function shape(row) {
@@ -40,12 +58,16 @@ fontsRouter.post(
   "/label",
   requireAuth,
   asyncHandler(async (req, res) => {
-    const { image, language = "latin", details = "" } = req.body || {};
+    const { image, language = "latin", details = "", provider = "claude" } = req.body || {};
     if (!image || typeof image !== "string") {
       return res.status(400).json({ error: "An image (base64 data URL) is required" });
     }
     try {
-      const glyphs = await labelHandwriting(image, { language: String(language), details: String(details) });
+      const glyphs = await labelHandwriting(image, {
+        language: String(language),
+        details: String(details),
+        provider: provider === "gpt" ? "gpt" : "claude",
+      });
       res.json({ glyphs });
     } catch (err) {
       // Surface a clean message; the client falls back to manual/template mode.

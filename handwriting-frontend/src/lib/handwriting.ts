@@ -53,11 +53,12 @@ export function applyHandwritingJitter(html: string, seed: number, intensity = 1
   if (intensity <= 0 || typeof document === "undefined") return html;
 
   const rand = mulberry32(seed);
-  // Strong, clearly-visible irregularity (no stroke thickening — never bold).
-  const maxRot = 2.0 * intensity; // degrees: each word tilts
-  const maxY = 3.0 * intensity; // px: words drift up/down
-  const maxSkew = 2.4 * intensity; // degrees: slight slant variation
-  const maxScale = 0.07 * intensity; // ±size variation per word
+  // Subtle irregularity that SCALES WITH FONT SIZE (em units, not px) so it reads
+  // the same at 18px or 48px and never bounces words off the line.
+  const maxRot = 1.1 * intensity; // degrees: each word tilts
+  const maxYEm = 0.045 * intensity; // em: words drift up/down (relative to size)
+  const maxSkew = 1.3 * intensity; // degrees: slight slant variation
+  const maxScale = 0.04 * intensity; // ±size variation per word
 
   const doc = new DOMParser().parseFromString(`<div>${html}</div>`, "text/html");
   const root = doc.body.firstChild as HTMLElement;
@@ -77,25 +78,26 @@ export function applyHandwritingJitter(html: string, seed: number, intensity = 1
           const span = doc.createElement("span");
           const classes = ["hw-word"];
           const r = (rand() * 2 - 1) * maxRot;
-          const y = (rand() * 2 - 1) * maxY;
+          const y = (rand() * 2 - 1) * maxYEm;
           const sk = (rand() * 2 - 1) * maxSkew;
           const sc = (1 + (rand() * 2 - 1) * maxScale).toFixed(3); // size wobble
-          const o = (0.78 + rand() * 0.22).toFixed(2); // ink flow: 0.78–1.0
-          const ls = ((rand() * 2 - 1) * 0.4).toFixed(2); // spacing wobble (px)
+          const o = (0.88 + rand() * 0.12).toFixed(2); // ink flow: 0.88–1.0 (subtle)
+          const ls = (rand() * 2 - 1) * 0.012; // spacing wobble (em)
           const styles = [
             `--r:${r.toFixed(2)}deg`,
-            `--y:${y.toFixed(2)}px`,
+            `--y:${y.toFixed(3)}em`,
             `--sk:${sk.toFixed(2)}deg`,
             `--sc:${sc}`,
             `--o:${o}`,
-            `--ls:${ls}px`,
+            `--ls:${ls.toFixed(3)}em`,
           ];
 
-          // Ink specks / splatter near some words (skip CJK so glyphs stay clean).
+          // Occasional, subtle ink speck (skip CJK so glyphs stay clean). Kept
+          // rare — frequent specks read as dirt, not handwriting.
           if (!CJK.test(token)) {
             const roll = rand();
-            if (roll > 0.8) classes.push("hw-speck");
-            if (roll > 0.92) classes.push("hw-drip");
+            if (roll > 0.95) classes.push("hw-speck");
+            if (roll > 0.99) classes.push("hw-drip");
           }
 
           span.className = classes.join(" ");

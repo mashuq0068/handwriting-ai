@@ -74,7 +74,6 @@ Rules:
 
 const FORMS = new Set(["isol", "init", "medi", "fina"]);
 
-// Parse JSON that may be wrapped in markdown fences or surrounded by prose.
 function parseJsonLoose(text) {
   const trimmed = String(text).trim().replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim();
   try {
@@ -87,7 +86,6 @@ function parseJsonLoose(text) {
   }
 }
 
-// Clamp + shape the model's glyph list into our canonical form.
 function normalizeGlyphs(parsed) {
   const glyphs = Array.isArray(parsed?.glyphs) ? parsed.glyphs : [];
   return glyphs
@@ -103,7 +101,7 @@ function normalizeGlyphs(parsed) {
     .filter((g) => g.w > 0 && g.h > 0);
 }
 
-// --- provider: Anthropic ---------------------------------------------------
+// --- provider: Claude (Anthropic) ------------------------------------------
 async function labelWithAnthropic(image, { language, details }) {
   const c = getAnthropic();
   const { mediaType, data } = parseDataUrl(image);
@@ -126,46 +124,16 @@ async function labelWithAnthropic(image, { language, details }) {
   return normalizeGlyphs(JSON.parse(textBlock.text));
 }
 
-// --- provider: Gemini (free tier, REST) ------------------------------------
-async function labelWithGemini(image, { language, details }) {
-  const { mediaType, data } = parseDataUrl(image);
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${config.gemini.model}:generateContent?key=${config.gemini.apiKey}`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [
-        {
-          parts: [
-            { inline_data: { mime_type: mediaType, data } },
-            { text: buildPrompt(language, details, true) },
-          ],
-        },
-      ],
-      generationConfig: { responseMimeType: "application/json", temperature: 0.2 },
-    }),
-  });
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`Gemini ${res.status}: ${body.slice(0, 200)}`);
-  }
-  const json = await res.json();
-  const text = json?.candidates?.[0]?.content?.parts?.map((p) => p.text).filter(Boolean).join("") || "";
-  if (!text) return [];
-  return normalizeGlyphs(parseJsonLoose(text));
-}
-
-// --- provider: any OpenAI-compatible vision API (Groq / OpenRouter / GitHub Models / …) ---
-async function labelWithOpenAICompat(image, { language, details }) {
-  const base = config.openaiCompat.baseUrl.replace(/\/$/, "");
-  const res = await fetch(`${base}/chat/completions`, {
+// --- provider: GPT (OpenAI chat completions, gpt-4o vision) -----------------
+async function labelWithOpenAI(image, { language, details }) {
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${config.openaiCompat.apiKey}`,
+      Authorization: `Bearer ${config.openai.apiKey}`,
     },
     body: JSON.stringify({
-      model: config.openaiCompat.model,
+      model: config.openai.visionModel,
       temperature: 0.2,
       response_format: { type: "json_object" },
       messages: [
@@ -181,7 +149,7 @@ async function labelWithOpenAICompat(image, { language, details }) {
   });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    throw new Error(`OpenAI-compatible ${res.status}: ${body.slice(0, 200)}`);
+    throw new Error(`OpenAI vision ${res.status}: ${body.slice(0, 200)}`);
   }
   const json = await res.json();
   const text = json?.choices?.[0]?.message?.content || "";
@@ -189,36 +157,28 @@ async function labelWithOpenAICompat(image, { language, details }) {
   return normalizeGlyphs(parseJsonLoose(text));
 }
 
-// Orchestrate a fallback CHAIN: try each configured provider in order; on any
-// error, move to the next. Anthropic → Gemini → OpenAI-compatible.
-export async function labelHandwriting(image, { language = "latin", details = "" } = {}) {
-  const opts = { language, details };
-  const providers = [];
-  if (config.anthropic.apiKey) providers.push({ name: "Anthropic", run: () => labelWithAnthropic(image, opts) });
-  if (config.gemini.apiKey) providers.push({ name: "Gemini", run: () => labelWithGemini(image, opts) });
-  if (config.openaiCompat.apiKey && config.openaiCompat.baseUrl && config.openaiCompat.model) {
-    providers.push({ name: "OpenAI-compatible", run: () => labelWithOpenAICompat(image, opts) });
-  }
+export function visionEnabled(provider) {
+  if (provider === "gpt") return Boolean(config.openai.apiKey);
+  if (provider === "claude") return Boolean(config.anthropic.apiKey);
+  return Boolean(config.anthropic.apiKey || config.openai.apiKey);
+}
 
-  if (!providers.length) {
-    const err = new Error(
-      "Single-photo mode is not configured. Set ANTHROPIC_API_KEY, GEMINI_API_KEY, or an OPENAI_COMPAT_* provider in the backend .env, or use Template mode (fully offline)."
-    );
+// Locate/label letters in a handwriting image with the chosen provider.
+export async function labelHandwriting(image, { language = "latin", details = "", provider = "claude" } = {}) {
+  const opts = { language, details };
+  if (provider === "gpt") {
+    if (!config.openai.apiKey) {
+      const err = new Error("GPT is selected but OPENAI_API_KEY is not set in the backend .env.");
+      err.status = 501;
+      throw err;
+    }
+    return labelWithOpenAI(image, opts);
+  }
+  // default: Claude
+  if (!config.anthropic.apiKey) {
+    const err = new Error("Claude is selected but ANTHROPIC_API_KEY is not set in the backend .env.");
     err.status = 501;
     throw err;
   }
-
-  let lastErr;
-  for (const p of providers) {
-    try {
-      const glyphs = await p.run();
-      if (glyphs && glyphs.length) return glyphs;
-      lastErr = new Error(`${p.name} returned no characters`);
-      console.warn(`[vision] ${p.name} returned 0 glyphs, trying next provider`);
-    } catch (e) {
-      lastErr = e;
-      console.warn(`[vision] ${p.name} failed, trying next provider:`, e.message);
-    }
-  }
-  throw lastErr || new Error("All vision providers failed");
+  return labelWithAnthropic(image, opts);
 }

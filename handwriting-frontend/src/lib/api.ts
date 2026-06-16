@@ -287,19 +287,27 @@ export const fontsApi = {
     return requestBinary(`/fonts/${id}/file`);
   },
 
-  // Whether the server has the AI extractor configured (API key present).
+  // Which providers the server has configured (claude = vision, gpt = vision+image-gen).
   async aiStatus() {
-    const data = await request<{ enabled: boolean }>("/fonts/ai-status");
-    return data.enabled;
+    return request<{ claude: boolean; gpt: boolean; imagegen: boolean; enabled: boolean }>("/fonts/ai-status");
   },
 
-  // Single-photo (AI) mode: one-time vision call returning labeled glyph boxes.
-  async label(input: { image: string; language?: string; details?: string }) {
+  // Vision (Claude or GPT): one-time call returning labeled glyph boxes from a sample.
+  async label(input: { image: string; language?: string; details?: string; provider?: "claude" | "gpt" }) {
     const data = await request<{ glyphs: LabeledGlyph[] }>("/fonts/label", {
       method: "POST",
       body: input,
     });
     return data.glyphs;
+  },
+
+  // Letter-sheet mode: image-gen model draws the full alphabet in the user's style.
+  async specimen(input: { image: string; language?: string; chars?: string }) {
+    const data = await request<{ image: string }>("/fonts/specimen", {
+      method: "POST",
+      body: input,
+    });
+    return data.image; // data-URL of the generated specimen sheet
   },
 };
 

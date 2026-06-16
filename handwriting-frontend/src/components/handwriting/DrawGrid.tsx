@@ -163,7 +163,8 @@ export const DrawGrid = forwardRef<DrawGridHandle, { script: ScriptConfig; onCov
             <p className="text-sm font-semibold mb-2">Connectors (optional — write the pair joined, like cursive)</p>
             <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2">
               {script.ligatures.map((l) => {
-                const cell: ScriptCell = { id: `lig:${l.display}`, chars: `${l.from[0]}${l.from[1]}`, display: l.display, kind: "ligature" };
+                const seq = l.from.join("");
+                const cell: ScriptCell = { id: `lig:${seq}`, chars: seq, display: l.display, kind: "ligature" };
                 return <DrawCell key={cell.id} cell={cell} guide="baseline" register={register} onInk={onInk} />;
               })}
             </div>

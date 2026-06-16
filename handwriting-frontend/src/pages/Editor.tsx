@@ -667,6 +667,10 @@ export default function Editor() {
                   fontSize: fontSize[0],
                   lineHeight: spacing[0],
                   transform: `skewX(${-slant[0]}deg)`,
+                  // Ligatures off by default: they only help when the connected
+                  // pairs were captured correctly (cursive mode). Otherwise they
+                  // swap in mis-written pair glyphs and drop letters.
+                  fontFeatureSettings: '"liga" 0, "clig" 0, "calt" 0',
                 }}
                 dangerouslySetInnerHTML={{ __html: html }}
               />
