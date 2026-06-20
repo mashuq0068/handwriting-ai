@@ -24,22 +24,20 @@ const DEFAULT_CHARS =
 function buildPrompt(language, chars) {
   const langName = LANGUAGE_NAMES[language] || language;
   const list = chars && chars.trim() ? chars.trim() : DEFAULT_CHARS;
-  return `You are given a photo of someone's ${langName} handwriting.
+  return `Look ONLY at the HANDWRITING STYLE in the attached ${langName} sample — the slant, letter shapes, roundness and stroke thickness. IGNORE its words, sentences and layout entirely.
 
-Generate a NEW image: a clean handwriting "specimen sheet" on a plain WHITE background with BLACK ink. Write EACH of the following characters EXACTLY ONCE, copying the SAME handwriting style, slant, proportions and stroke thickness as the sample as closely as you possibly can.
+Produce a NEW image: a clean alphabet "specimen sheet" on a PURE WHITE background in solid BLACK ink, hand-written in that SAME style. Write EACH of these characters EXACTLY ONCE, in THIS EXACT ORDER, arranged as an evenly spaced GRID of about 8 per row, reading left-to-right then top-to-bottom:
 
-Characters (in this order):
 ${list}
 
-Strict layout rules:
-- Lay the characters out in neat rows, left to right, in the given order.
-- Leave LARGE, clear gaps between every character and between rows — each character must be fully separated, never touching its neighbours.
-- Write each character in isolation (do NOT join letters cursively).
-- Big and clear (each character large in its space).
-- Plain white background, solid black ink. No ruled lines, no grid, no boxes, no labels, no extra words — ONLY the characters.`;
+Hard requirements:
+- Every character standalone and clearly SEPARATED — generous, even gaps horizontally AND vertically; characters must NEVER touch.
+- Print-style isolated letters (do NOT join them cursively).
+- Each character large, crisp and centered in its slot, sitting on a common baseline per row.
+- PURE WHITE background, SOLID BLACK ink only. NO grid lines, NO boxes, NO ruled lines, NO labels, NO extra words, NO shading — ONLY these characters.`;
 }
 
-// gpt-image-1 image edit, using the sample as the reference image.
+// gpt-image-1 image edit, using the sample as the style reference.
 async function generateWithOpenAI(image, { language, chars }) {
   const { mediaType, data } = parseDataUrl(image);
   const buffer = Buffer.from(data, "base64");
@@ -48,6 +46,7 @@ async function generateWithOpenAI(image, { language, chars }) {
   form.append("image", new Blob([buffer], { type: mediaType }), "sample.png");
   form.append("prompt", buildPrompt(language, chars));
   form.append("size", "1024x1024");
+  form.append("quality", "high"); // crisp letters → reliable extraction
   const res = await fetch("https://api.openai.com/v1/images/edits", {
     method: "POST",
     headers: { Authorization: `Bearer ${config.openai.apiKey}` },

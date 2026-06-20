@@ -43,6 +43,9 @@ export default function HandwritingAI() {
   const [ai, setAi] = useState<{ claude: boolean; gpt: boolean; imagegen: boolean } | null>(null);
   const [provider, setProvider] = useState<Provider>("claude");
   const [specimenUrl, setSpecimenUrl] = useState<string | null>(null);
+  const [tiles, setTiles] = useState<GlyphInput[]>([]); // extracted cells, for debugging
+  const [attempted, setAttempted] = useState(false); // a Train run was started
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     fontsApi
@@ -82,6 +85,27 @@ export default function HandwritingAI() {
       i.src = url;
     });
 
+  // Draw Claude's labeled boxes onto the sample so the user can SEE its reading.
+  const drawLabelOverlay = (img: HTMLImageElement, glyphs: LabeledGlyph[]): string => {
+    const c = document.createElement("canvas");
+    const max = 1100;
+    const scale = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+    c.width = Math.round(img.naturalWidth * scale);
+    c.height = Math.round(img.naturalHeight * scale);
+    const ctx = c.getContext("2d")!;
+    ctx.drawImage(img, 0, 0, c.width, c.height);
+    ctx.lineWidth = 2;
+    ctx.font = "bold 14px sans-serif";
+    for (const g of glyphs) {
+      const x = g.x * c.width, y = g.y * c.height, w = g.w * c.width, h = g.h * c.height;
+      ctx.strokeStyle = "rgba(220,40,40,0.9)";
+      ctx.strokeRect(x, y, w, h);
+      ctx.fillStyle = "rgba(220,40,40,0.95)";
+      ctx.fillText(g.char, x, Math.max(12, y - 3));
+    }
+    return c.toDataURL("image/png");
+  };
+
   // Character list for this script (base glyphs only) — sent to the image model.
   const charsetFor = (code: string) => {
     const seen = new Set<string>();
@@ -116,6 +140,9 @@ export default function HandwritingAI() {
     }
     setStatus("training");
     setSpecimenUrl(null);
+    setTiles([]);
+    setAttempted(true);
+    setErrorMsg(null);
     try {
       const isLatin = scriptCode === "latin";
       const sampleUrl = toDataUrl(photo);
@@ -123,11 +150,12 @@ export default function HandwritingAI() {
 
       if (provider === "gpt") {
         // GPT: generate a clean cloned alphabet specimen, then extract THAT
-        // (clean, separated, full coverage).
+        // (clean, separated, full coverage). For English, request EXACTLY the
+        // deterministic sequence so segmentSpecimen can map blobs 1:1.
         const sheet = await fontsApi.specimen({
           image: sampleUrl,
           language: scriptCode,
-          chars: charsetFor(scriptCode),
+          chars: isLatin ? LATIN_SEQUENCE.join(" ") : charsetFor(scriptCode),
         });
         setSpecimenUrl(sheet);
         const source = await loadImage(sheet);
@@ -144,8 +172,11 @@ export default function HandwritingAI() {
         // Claude: vision-only — read the uploaded sample directly and pull out the
         // letters it can isolate (works for letters present in your page).
         const glyphs = await fontsApi.label({ image: sampleUrl, language: scriptCode, provider: "claude" });
+        if (glyphs.length) setSpecimenUrl(drawLabelOverlay(photo, glyphs)); // show Claude's reading
         inputs = glyphsToInputs(glyphs, photo);
       }
+
+      setTiles(inputs ?? []); // surface what we extracted, even if the build fails next
 
       if (!inputs || !inputs.length) {
         toast.warning(
@@ -162,11 +193,10 @@ export default function HandwritingAI() {
       setBuilt(font);
       setStatus("done");
     } catch (e) {
-      if (e instanceof ApiError && e.status === 501) {
-        toast.warning(e.message); // e.g. "GPT selected but OPENAI_API_KEY not set"
-      } else {
-        toast.error(e instanceof Error ? e.message : "Couldn't train the model");
-      }
+      const msg = e instanceof Error ? e.message : "Couldn't train the model";
+      setErrorMsg(msg);
+      if (e instanceof ApiError && e.status === 501) toast.warning(msg);
+      else toast.error(msg);
       setStatus("form");
     }
   };
@@ -315,6 +345,60 @@ export default function HandwritingAI() {
                 <div className="text-center text-sm text-muted-foreground flex flex-col items-center gap-2 pt-2">
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
                   Reading your handwriting and building your font…
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* DEBUG — what the AI returned + what we extracted (persists on failure) */}
+          {attempted && (
+            <div className="mt-6 rounded-2xl border border-dashed border-border bg-muted/30 p-5 space-y-4">
+              <p className="text-sm font-semibold text-muted-foreground">Debug — provider: <span className="uppercase">{provider}</span></p>
+
+              {errorMsg && (
+                <div className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/40 p-3 text-sm text-amber-900 dark:text-amber-100">
+                  <strong>The run failed before producing an image:</strong> {errorMsg}
+                  {/billing|limit/i.test(errorMsg) && (
+                    <span> — your OpenAI account hit its spending limit. Add credit at platform.openai.com → Billing, then restart the backend.</span>
+                  )}
+                </div>
+              )}
+
+              {!specimenUrl && !tiles.length && photo && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1.5">Your uploaded sample (no AI output was produced):</p>
+                  <img src={photo.src} alt="sample" className="rounded-lg border border-border max-h-56 object-contain bg-white" />
+                </div>
+              )}
+
+              {specimenUrl ? (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1.5">
+                    {provider === "gpt"
+                      ? "Image GPT generated (the cloned alphabet we extract from):"
+                      : "Claude's reading — red boxes show where it located each letter on your sample:"}
+                  </p>
+                  <img src={specimenUrl} alt="AI output" className="rounded-lg border border-border max-h-80 object-contain bg-white mx-auto" />
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    {provider === "gpt"
+                      ? "It should be separated black letters on white. If they touch / aren't a clean grid, extraction will struggle and I'll tune the prompt."
+                      : "If boxes are misplaced, overlapping, or grab parts of neighbours, that's why some tiles look off — Claude's boxes aren't pixel-tight."}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">No AI output image yet — see the extracted tiles below.</p>
+              )}
+              {tiles.length > 0 && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1.5">Extracted {tiles.length} glyph{tiles.length > 1 ? "s" : ""} (the actual ink used to build the font):</p>
+                  <div className="flex flex-wrap gap-2 max-h-72 overflow-auto">
+                    {tiles.map((t) => (
+                      <div key={t.cell.id} className="flex flex-col items-center">
+                        <img src={t.canvas.toDataURL()} alt={t.cell.display} className="h-12 w-9 object-contain rounded border border-border bg-white" />
+                        <span className="text-[10px] text-muted-foreground mt-0.5">{t.cell.display}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

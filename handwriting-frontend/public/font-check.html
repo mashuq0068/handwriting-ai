@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Font check — new.ttf</title>
+    <style>
+      @font-face {
+        font-family: "NewFont";
+        src: url("/new.ttf") format("truetype");
+        font-display: swap;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        background: #f5f1e8;
+        color: #1c1c22;
+        padding: 24px;
+      }
+      .wrap { max-width: 920px; margin: 0 auto; }
+      h1 { font-size: 20px; margin: 0 0 4px; }
+      .sub { color: #6b6b6b; font-size: 13px; margin: 0 0 18px; }
+      .controls {
+        display: flex; flex-wrap: wrap; gap: 16px; align-items: center;
+        background: #fff; border: 1px solid #e3ddcf; border-radius: 12px; padding: 12px 16px; margin-bottom: 14px;
+      }
+      .controls label { font-size: 13px; display: inline-flex; align-items: center; gap: 8px; }
+      textarea {
+        width: 100%; min-height: 110px; padding: 12px 14px; border: 1px solid #e3ddcf; border-radius: 12px;
+        font-family: inherit; font-size: 14px; resize: vertical; margin-bottom: 14px;
+      }
+      .preview {
+        background: #fff; border: 1px solid #e3ddcf; border-radius: 14px; padding: 28px; min-height: 160px;
+        white-space: pre-wrap; word-break: break-word;
+      }
+      .preview.ruled {
+        background-image: linear-gradient(to bottom, transparent calc(var(--lh) - 1px), rgba(80,120,170,0.25) var(--lh));
+        background-size: 100% var(--lh);
+      }
+      .status { font-size: 12px; margin-top: 10px; }
+      .ok { color: #237a23; } .bad { color: #b23b3b; }
+      .swatch { font-family: "NewFont", cursive; }
+      .glyphs { margin-top: 18px; }
+      .glyphs .row { font-family: "NewFont", cursive; font-size: 30px; line-height: 1.8; letter-spacing: 4px; word-break: break-word; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>Font check — <span class="swatch">new.ttf</span></h1>
+      <p class="sub">Type or paste below; it renders in <code>/new.ttf</code>. (If it looks like a plain system font, the file didn't load — see status at the bottom.)</p>
+
+      <div class="controls">
+        <label>Size <input id="size" type="range" min="14" max="80" value="34" /> <span id="sizeVal">34px</span></label>
+        <label>Line <input id="line" type="range" min="10" max="30" value="16" /> <span id="lineVal">1.6</span></label>
+        <label>Color <input id="color" type="color" value="#1c2b4a" /></label>
+        <label><input id="ruled" type="checkbox" /> ruled paper</label>
+        <label><input id="liga" type="checkbox" /> ligatures (calt/liga)</label>
+      </div>
+
+      <textarea id="input">The quick brown fox jumps over the lazy dog.
+ABCDEFGHIJKLMNOPQRSTUVWXYZ
+abcdefghijklmnopqrstuvwxyz
+0123456789 . , ! ? ' " - : ; ( ) &amp; @ #
+the thing running and reading</textarea>
+
+      <div id="preview" class="preview"></div>
+
+      <div class="glyphs">
+        <div class="row">A B C D E F G H I J K L M N O P Q R S T U V W X Y Z</div>
+        <div class="row">a b c d e f g h i j k l m n o p q r s t u v w x y z</div>
+        <div class="row">0 1 2 3 4 5 6 7 8 9 . , ! ? ' " - : ; ( ) &amp; @ #</div>
+      </div>
+
+      <div id="status" class="status"></div>
+    </div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const preview = $("preview");
+      function render() {
+        const size = +$("size").value, line = +$("line").value / 10;
+        $("sizeVal").textContent = size + "px";
+        $("lineVal").textContent = line.toFixed(1);
+        preview.textContent = $("input").value || " ";
+        preview.style.fontFamily = '"NewFont", cursive';
+        preview.style.fontSize = size + "px";
+        preview.style.lineHeight = line;
+        preview.style.color = $("color").value;
+        preview.style.setProperty("--lh", size * line + "px");
+        preview.classList.toggle("ruled", $("ruled").checked);
+        preview.style.fontFeatureSettings = $("liga").checked
+          ? '"liga" 1, "clig" 1, "calt" 1'
+          : '"liga" 0, "clig" 0, "calt" 0';
+      }
+      ["input", "size", "line", "color", "ruled", "liga"].forEach((id) =>
+        $(id).addEventListener("input", render)
+      );
+      render();
+
+      // Report whether the font actually loaded.
+      const status = $("status");
+      if (document.fonts && document.fonts.load) {
+        document.fonts.load('20px "NewFont"').then(() => {
+          const ok = document.fonts.check('20px "NewFont"');
+          status.innerHTML = ok
+            ? '<span class="ok">✓ new.ttf loaded.</span>'
+            : '<span class="bad">✗ new.ttf did NOT load — make sure the file is at handwriting-frontend/public/new.ttf and the dev server is running.</span>';
+        });
+      }
+    </script>
+  </body>
+</html>

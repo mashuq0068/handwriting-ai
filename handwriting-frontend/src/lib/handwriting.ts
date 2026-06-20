@@ -8,7 +8,7 @@
  */
 
 /** Deterministic PRNG (mulberry32) — same seed ⇒ same sequence. */
-function mulberry32(seed: number) {
+export function mulberry32(seed: number) {
   let a = seed >>> 0;
   return () => {
     a |= 0;
@@ -45,20 +45,38 @@ function tokenize(text: string): string[] {
  * only transforms text nodes. Adds subtle ink-flow variation: lighter/heavier
  * words, spacing wobble, occasional pressed strokes and ink specks.
  *
- * @param html       parsed-markdown HTML
- * @param seed       stable seed (e.g. hashString(text))
- * @param intensity  0 = none, 1 = subtle, 2 = strong
+// Per-effect realism controls (all optional; magnitudes are at intensity 1).
+export interface JitterOptions {
+  intensity?: number; // master multiplier (0 = off)
+  drift?: number; // vertical up/down per word (em, default 0.045)
+  rotate?: number; // word tilt (deg, default 1.1)
+  slant?: number; // slant variation / skew (deg, default 1.3)
+  scale?: number; // size wobble (fraction, default 0.04)
+  spacing?: number; // letter-spacing wobble (em, default 0.012)
+  inkFlow?: boolean; // lighter/heavier words (default true)
+  specks?: boolean; // occasional ink specks/drips (default true)
+}
+
+/**
+ * @param html  HTML fragment
+ * @param seed  stable seed (e.g. hashString(text))
+ * @param opts  number (master intensity) OR a JitterOptions object
  */
-export function applyHandwritingJitter(html: string, seed: number, intensity = 1): string {
+export function applyHandwritingJitter(html: string, seed: number, opts: number | JitterOptions = 1): string {
+  const o: JitterOptions = typeof opts === "number" ? { intensity: opts } : opts;
+  const intensity = o.intensity ?? 1;
   if (intensity <= 0 || typeof document === "undefined") return html;
 
   const rand = mulberry32(seed);
   // Subtle irregularity that SCALES WITH FONT SIZE (em units, not px) so it reads
   // the same at 18px or 48px and never bounces words off the line.
-  const maxRot = 1.1 * intensity; // degrees: each word tilts
-  const maxYEm = 0.045 * intensity; // em: words drift up/down (relative to size)
-  const maxSkew = 1.3 * intensity; // degrees: slight slant variation
-  const maxScale = 0.04 * intensity; // ±size variation per word
+  const maxRot = (o.rotate ?? 1.1) * intensity; // degrees: each word tilts
+  const maxYEm = (o.drift ?? 0.045) * intensity; // em: words drift up/down
+  const maxSkew = (o.slant ?? 1.3) * intensity; // degrees: slant variation
+  const maxScale = (o.scale ?? 0.04) * intensity; // ±size variation per word
+  const maxLs = (o.spacing ?? 0.012) * intensity; // em: spacing wobble
+  const inkFlow = o.inkFlow !== false;
+  const specks = o.specks !== false;
 
   const doc = new DOMParser().parseFromString(`<div>${html}</div>`, "text/html");
   const root = doc.body.firstChild as HTMLElement;
@@ -81,20 +99,19 @@ export function applyHandwritingJitter(html: string, seed: number, intensity = 1
           const y = (rand() * 2 - 1) * maxYEm;
           const sk = (rand() * 2 - 1) * maxSkew;
           const sc = (1 + (rand() * 2 - 1) * maxScale).toFixed(3); // size wobble
-          const o = (0.88 + rand() * 0.12).toFixed(2); // ink flow: 0.88–1.0 (subtle)
-          const ls = (rand() * 2 - 1) * 0.012; // spacing wobble (em)
+          const op = inkFlow ? (0.84 + rand() * 0.16).toFixed(2) : "1"; // ink flow
+          const ls = (rand() * 2 - 1) * maxLs; // spacing wobble (em)
           const styles = [
             `--r:${r.toFixed(2)}deg`,
             `--y:${y.toFixed(3)}em`,
             `--sk:${sk.toFixed(2)}deg`,
             `--sc:${sc}`,
-            `--o:${o}`,
+            `--o:${op}`,
             `--ls:${ls.toFixed(3)}em`,
           ];
 
-          // Occasional, subtle ink speck (skip CJK so glyphs stay clean). Kept
-          // rare — frequent specks read as dirt, not handwriting.
-          if (!CJK.test(token)) {
+          // Occasional, subtle ink speck (skip CJK so glyphs stay clean).
+          if (specks && !CJK.test(token)) {
             const roll = rand();
             if (roll > 0.95) classes.push("hw-speck");
             if (roll > 0.99) classes.push("hw-drip");
